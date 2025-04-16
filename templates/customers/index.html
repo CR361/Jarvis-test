@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Klanten - Jarvis CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-users text-primary me-2"></i>Klanten
+    </h1>
+    <a href="{{ url_for('customer_create') }}" class="btn btn-primary">
+        <i class="fas fa-plus-circle me-2"></i>Nieuwe klant
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('customer_list') }}" class="row g-3">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <input type="text" name="search" class="form-control" placeholder="Zoek op naam, e-mail of bedrijf..." value="{{ request.args.get('search', '') }}">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-1"></i> Zoeken
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select name="sort_by" class="form-select" onchange="this.form.submit()">
+                    <option value="name" {% if request.args.get('sort_by') == 'name' %}selected{% endif %}>Sorteren op naam</option>
+                    <option value="company" {% if request.args.get('sort_by') == 'company' %}selected{% endif %}>Sorteren op bedrijf</option>
+                    <option value="newest" {% if request.args.get('sort_by') == 'newest' %}selected{% endif %}>Nieuwste eerst</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if customers %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Naam</th>
+                    <th>Bedrijf</th>
+                    <th>E-mail</th>
+                    <th>Telefoon</th>
+                    <th>Plaats</th>
+                    <th>Acties</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('customer_view', customer_id=customer.id) }}">
+                            {{ customer.name }}
+                        </a>
+                    </td>
+                    <td>{{ customer.company or '-' }}</td>
+                    <td>{{ customer.email }}</td>
+                    <td>{{ customer.phone or '-' }}</td>
+                    <td>{{ customer.city or '-' }}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('customer_view', customer_id=customer.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{{ url_for('customer_edit', customer_id=customer.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{{ url_for('create_invoice') }}?customer_id={{ customer.id }}" class="btn btn-outline-success">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>Geen klanten gevonden. Maak een nieuwe klant aan met de knop hierboven.
+</div>
+{% endif %}
+{% endblock %}

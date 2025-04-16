@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('checklist') }}">Taken</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Taak bewerken</li>
+        </ol>
+    </nav>
+    
+    <div class="d-flex justify-content-between mb-4">
+        <h1>
+            <i class="fa-solid fa-tasks"></i> Taak bewerken
+        </h1>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="mb-4">
+                <h5 class="card-title">{{ item.description }}</h5>
+                <div class="text-muted mb-3">
+                    <strong>Klant:</strong>
+                    <a href="{{ url_for('customer_view', customer_id=item.customer.id) }}">
+                        {{ item.customer.name }}
+                    </a>
+                </div>
+                
+                {% if item.invoice_item %}
+                    <div class="text-muted mb-3">
+                        <strong>Factuur:</strong>
+                        <a href="{{ url_for('invoice_view', invoice_id=item.invoice_item.invoice.id) }}">
+                            {{ item.invoice_item.invoice.invoice_number }}
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <form method="POST" action="{{ url_for('edit_checklist_item', item_id=item.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="mb-3">
+                    <label for="contractor_id" class="form-label">{{ form.contractor_id.label }}</label>
+                    {{ form.contractor_id(class="form-select") }}
+                    {% if form.contractor_id.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.contractor_id.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3 form-check">
+                    {{ form.is_completed(class="form-check-input") }}
+                    <label class="form-check-label" for="is_completed">{{ form.is_completed.label }}</label>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="notes" class="form-label">{{ form.notes.label }}</label>
+                    {{ form.notes(class="form-control", rows=5, placeholder="Notities over de voortgang van deze taak...") }}
+                    {% if form.notes.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.notes.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-save"></i> Wijzigingen opslaan
+                    </button>
+                    <a href="{{ url_for('checklist') }}" class="btn btn-secondary">
+                        Annuleren
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

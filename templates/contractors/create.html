@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-helmet-safety"></i> Nieuwe Aannemer
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_contractor') }}">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">{{ form.name.label }} <span class="text-danger">*</span></label>
+                            {{ form.name(class="form-control", placeholder="Naam van de aannemer") }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="specialty" class="form-label">{{ form.specialty.label }}</label>
+                            {{ form.specialty(class="form-control", placeholder="Bijv. Loodgieter, Elektricien, Timmerman") }}
+                            {% if form.specialty.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.specialty.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">{{ form.email.label }}</label>
+                                    {{ form.email(class="form-control", placeholder="E-mailadres") }}
+                                    {% if form.email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.email.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">{{ form.phone.label }}</label>
+                                    {{ form.phone(class="form-control", placeholder="Telefoonnummer") }}
+                                    {% if form.phone.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.phone.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">{{ form.notes.label }}</label>
+                            {{ form.notes(class="form-control", rows=3, placeholder="Aanvullende notities of informatie") }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-save"></i> Opslaan
+                            </button>
+                            <a href="{{ url_for('contractor_list') }}" class="btn btn-secondary">
+                                <i class="fa-solid fa-ban"></i> Annuleren
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

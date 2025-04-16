@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Contract: {{ contract.title }} - Jarvis CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-file-signature text-primary me-2"></i>Contract
+    </h1>
+    <div class="btn-group">
+        <a href="{{ url_for('customer_view', customer_id=customer.id) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Terug naar klant
+        </a>
+        {% if contract.status == 'concept' %}
+        <a href="{{ url_for('contract_edit', contract_id=contract.id) }}" class="btn btn-outline-primary">
+            <i class="fas fa-edit me-2"></i>Bewerken
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ contract.title }}</h5>
+                <span class="badge {% if contract.status == 'concept' %}bg-secondary{% elif contract.status == 'verzonden' %}bg-warning{% elif contract.status == 'ondertekend' %}bg-success{% elif contract.status == 'geweigerd' %}bg-danger{% endif %}">
+                    {{ contract.status|capitalize }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="contract-content border p-4 mb-4 bg-white">
+                    {{ contract.content|nl2br|safe }}
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <small class="text-muted">Aangemaakt op: {{ contract.created_at.strftime('%d-%m-%Y') }}</small><br>
+                        <small class="text-muted">Laatste update: {{ contract.updated_at.strftime('%d-%m-%Y') }}</small>
+                    </div>
+                    <div>
+                        {% if contract.status == 'concept' %}
+                        <form method="POST" action="{{ url_for('contract_send', contract_id=contract.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Versturen naar klant
+                            </button>
+                        </form>
+                        {% elif contract.status == 'verzonden' %}
+                        <a href="{{ url_for('contract_sign', contract_id=contract.id) }}" class="btn btn-success">
+                            <i class="fas fa-signature me-2"></i>Ondertekenen
+                        </a>
+                        <form method="POST" action="{{ url_for('contract_reject', contract_id=contract.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Weet je zeker dat je dit contract wilt afwijzen?')">
+                                <i class="fas fa-times-circle me-2"></i>Afwijzen
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Klantgegevens</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Naam:</strong> {{ customer.name }}</p>
+                {% if customer.company %}
+                <p><strong>Bedrijf:</strong> {{ customer.company }}</p>
+                {% endif %}
+                {% if customer.kvk_number %}
+                <p><strong>KVK-nummer:</strong> {{ customer.kvk_number }}</p>
+                {% endif %}
+                <p><strong>E-mail:</strong> <a href="mailto:{{ customer.email }}">{{ customer.email }}</a></p>
+                {% if customer.phone %}
+                <p><strong>Telefoon:</strong> <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a></p>
+                {% endif %}
+                {% if customer.address %}
+                <p>
+                    <strong>Adres:</strong><br>
+                    {{ customer.address }}<br>
+                    {{ customer.postal_code }} {{ customer.city }}<br>
+                    {{ customer.country }}
+                </p>
+                {% endif %}
+                
+                <a href="{{ url_for('customer_view', customer_id=customer.id) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-user me-1"></i>Klantprofiel bekijken
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

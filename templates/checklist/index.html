@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">
+        <i class="fa-solid fa-clipboard-check"></i> Checklist
+    </h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Openstaande taken</h5>
+                </div>
+                <div class="card-body">
+                    {% if incomplete_items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Beschrijving</th>
+                                        <th>Klant</th>
+                                        <th>Toegewezen aan</th>
+                                        <th>Aangemaakt op</th>
+                                        <th>Acties</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in incomplete_items %}
+                                        <tr>
+                                            <td>{{ item.description }}</td>
+                                            <td>
+                                                <a href="{{ url_for('customer_view', customer_id=item.customer.id) }}">
+                                                    {{ item.customer.name }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                {% if item.contractor_id %}
+                                                    {{ item.assigned_contractor.name }}
+                                                {% else %}
+                                                    <span class="text-muted"><i>Niet toegewezen</i></span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ item.created_at.strftime('%d-%m-%Y') }}</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{{ url_for('edit_checklist_item', item_id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fa-solid fa-pen-to-square"></i>
+                                                    </a>
+                                                    <form action="{{ url_for('complete_checklist_item', item_id=item.id) }}" method="POST" class="d-inline">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                                            <i class="fa-solid fa-check"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fa-solid fa-info-circle"></i> Er zijn geen openstaande taken.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent voltooide taken</h5>
+                </div>
+                <div class="card-body">
+                    {% if completed_items %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Beschrijving</th>
+                                        <th>Klant</th>
+                                        <th>Uitgevoerd door</th>
+                                        <th>Voltooid op</th>
+                                        <th>Acties</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in completed_items %}
+                                        <tr>
+                                            <td><s>{{ item.description }}</s></td>
+                                            <td>
+                                                <a href="{{ url_for('customer_view', customer_id=item.customer.id) }}">
+                                                    {{ item.customer.name }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                {% if item.contractor_id %}
+                                                    {{ item.assigned_contractor.name }}
+                                                {% else %}
+                                                    <span class="text-muted"><i>Niet toegewezen</i></span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ item.completed_at.strftime('%d-%m-%Y') }}</td>
+                                            <td>
+                                                <form action="{{ url_for('incomplete_checklist_item', item_id=item.id) }}" method="POST" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                        <i class="fa-solid fa-rotate-left"></i> Markeer als niet voltooid
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fa-solid fa-info-circle"></i> Er zijn geen voltooide taken.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

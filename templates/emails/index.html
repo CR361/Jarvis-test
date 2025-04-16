@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}E-mails - Jarvis{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-envelope text-primary me-2"></i>E-mails
+    </h1>
+    <a href="{{ url_for('email_create') }}" class="btn btn-primary btn-glow">
+        <i class="fas fa-plus me-2"></i>Nieuwe E-mail
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+        <h5 class="card-title mb-4">E-mail versturen</h5>
+        <p class="text-muted mb-3">
+            Verstuur e-mails naar uw klanten. U kunt templates gebruiken of uw eigen e-mail samenstellen.
+        </p>
+        
+        <form method="GET" action="{{ url_for('email_create') }}" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Template selecteren</label>
+                <div class="row">
+                    <div class="col-6">
+                        <button type="submit" name="template" value="welcome" class="btn btn-outline-primary w-100 mb-2">
+                            <i class="fas fa-handshake me-2"></i>Welkom
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="submit" name="template" value="payment_reminder" class="btn btn-outline-warning w-100 mb-2">
+                            <i class="fas fa-exclamation-circle me-2"></i>Betalingsherinnering
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="submit" name="template" value="thank_you" class="btn btn-outline-success w-100 mb-2">
+                            <i class="fas fa-check-circle me-2"></i>Bedankt
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="submit" name="template" value="invoice" class="btn btn-outline-info w-100 mb-2">
+                            <i class="fas fa-file-invoice-dollar me-2"></i>Factuur
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card h-100 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title mb-3">
+                            <i class="fas fa-lightbulb text-warning me-2"></i>Snel versturen naar specifieke klant
+                        </h6>
+                        <select name="customer_id" class="form-select mb-3">
+                            <option value="">-- Selecteer een klant --</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}">{{ customer.name }} ({{ customer.email }})</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" name="template" value="general" class="btn btn-primary w-100">
+                            <i class="fas fa-paper-plane me-2"></i>E-mail maken
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="card-title mb-0">Recente e-mailcommunicatie</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Datum</th>
+                    <th>Klant</th>
+                    <th>Onderwerp</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comm in communications %}
+                {% if comm.type == 'email' %}
+                <tr>
+                    <td>{{ comm.date.strftime('%d-%m-%Y') }}</td>
+                    <td>
+                        <a href="{{ url_for('customer_view', customer_id=comm.customer_id) }}">
+                            {{ comm.customer.name }}
+                        </a>
+                    </td>
+                    <td>{{ comm.subject }}</td>
+                    <td><span class="badge bg-primary">E-mail</span></td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                
+                {% if not has_email_comms %}
+                <tr>
+                    <td colspan="4" class="text-center py-3 text-muted">
+                        <i class="fas fa-info-circle me-2"></i>Geen e-mailcommunicatie gevonden.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

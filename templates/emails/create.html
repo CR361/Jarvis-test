@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+
+{% block title %}E-mail opstellen - Jarvis{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-envelope text-primary me-2"></i>E-mail opstellen
+    </h1>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-4">
+        <form method="POST" action="{{ url_for('email_create') }}" class="needs-validation" novalidate>
+            {{ form.csrf_token }}
+            
+            <div class="mb-4">
+                <label for="customer_id" class="form-label">Ontvanger</label>
+                <select id="customer_id" name="customer_id" class="form-select {% if form.customer_id.errors %}is-invalid{% endif %}" required>
+                    <option value="">-- Selecteer een klant --</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}" {% if form.customer_id.data == customer.id %}selected{% endif %}>
+                        {{ customer.name }} ({{ customer.email }})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if form.customer_id.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.customer_id.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="form-text text-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    De e-mail wordt verzonden vanaf creadifitycontact@gmail.com via SendGrid (API key geconfigureerd)
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="subject" class="form-label">Onderwerp</label>
+                <input type="text" id="subject" name="subject" class="form-control {% if form.subject.errors %}is-invalid{% endif %}" 
+                       value="{{ form.subject.data or '' }}" required>
+                {% if form.subject.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.subject.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-4">
+                <label for="template" class="form-label">Template (optioneel)</label>
+                <select id="template" name="template" class="form-select mb-2">
+                    <option value="">Geen template gebruiken</option>
+                    <option value="payment_reminder" {% if form.template.data == 'payment_reminder' %}selected{% endif %}>Betalingsherinnering</option>
+                    <option value="thank_you" {% if form.template.data == 'thank_you' %}selected{% endif %}>Bedankt voor uw betaling</option>
+                    <option value="welcome" {% if form.template.data == 'welcome' %}selected{% endif %}>Welkom als nieuwe klant</option>
+                    <option value="invoice" {% if form.template.data == 'invoice' %}selected{% endif %}>Factuur verzenden</option>
+                    <option value="general" {% if form.template.data == 'general' %}selected{% endif %}>Algemene communicatie</option>
+                </select>
+                <div class="form-text">Als u een template selecteert, wordt de inhoud hieronder vervangen.</div>
+                <button type="button" id="load-template" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sync me-2"></i>Template laden
+                </button>
+            </div>
+            
+            <div class="mb-4">
+                <label for="content" class="form-label">Inhoud</label>
+                <textarea id="content" name="content" class="form-control {% if form.content.errors %}is-invalid{% endif %}" 
+                          rows="12" required>{{ form.content.data or '' }}</textarea>
+                {% if form.content.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.content.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="form-text">U kunt HTML gebruiken voor opmaak. De automatische opmaak zorgt voor een consistente weergave.</div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('email_list') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Annuleren
+                </a>
+                <button type="submit" class="btn btn-primary btn-glow">
+                    <i class="fas fa-paper-plane me-2"></i>E-mail verzenden
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // JavaScript voor template laden
+    document.addEventListener('DOMContentLoaded', function() {
+        const templateSelect = document.getElementById('template');
+        const loadTemplateBtn = document.getElementById('load-template');
+        const contentTextarea = document.getElementById('content');
+        const subjectInput = document.getElementById('subject');
+        const customerSelect = document.getElementById('customer_id');
+        
+        // Template data (templates en onderwerpen)
+        const templates = {
+            'payment_reminder': {
+                'subject': 'Herinnering: Openstaande factuur',
+                'content': `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+        .header { background-color: #4A76A8; color: white; padding: 20px; }
+        .content { padding: 20px; }
+        .footer { margin-top: 30px; font-size: 0.8em; color: #777; border-top: 1px solid #eee; padding-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Betalingsherinnering</h2>
+    </div>
+    <div class="content">
+        <p>Beste klant,</p>
+        
+        <p>Dit is een vriendelijke herinnering dat uw factuur nog niet is voldaan.
+        Wij verzoeken u vriendelijk om het verschuldigde bedrag zo spoedig mogelijk te voldoen.</p>
+        
+        <p>Als u vragen heeft over deze factuur, neem dan gerust contact met ons op.</p>
+        
+        <p>Met vriendelijke groet,<br>
+        <strong>Jarvis</strong></p>
+    </div>
+    <div class="footer">
+        <p>Deze e-mail is verzonden via het Jarvis CRM-systeem.</p>
+    </div>
+</body>
+</html>`
+            },
+            'thank_you': {
+                'subject': 'Bedankt voor uw betaling',
+                'content': `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+        .header { background-color: #4CAF50; color: white; padding: 20px; }
+        .content { padding: 20px; }
+        .footer { margin-top: 30px; font-size: 0.8em; color: #777; border-top: 1px solid #eee; padding-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Bedankt voor uw betaling</h2>
+    </div>
+    <div class="content">
+        <p>Beste klant,</p>
+        
+        <p>Hartelijk dank voor uw betaling. Wij waarderen uw prompte betaling zeer.</p>
+        
+        <p>Als u vragen heeft of als we u nog ergens anders mee van dienst kunnen zijn, 
+        neem dan gerust contact met ons op.</p>
+        
+        <p>Met vriendelijke groet,<br>
+        <strong>Jarvis</strong></p>
+    </div>
+    <div class="footer">
+        <p>Deze e-mail is verzonden via het Jarvis CRM-systeem.</p>
+    </div>
+</body>
+</html>`
+            },
+            'welcome': {
+                'subject': 'Welkom als klant',
+                'content': `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+        .header { background-color: #2196F3; color: white; padding: 20px; }
+        .content { padding: 20px; }
+        .footer { margin-top: 30px; font-size: 0.8em; color: #777; border-top: 1px solid #eee; padding-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Welkom bij Jarvis</h2>
+    </div>
+    <div class="content">
+        <p>Beste klant,</p>
+        
+        <p>Hartelijk welkom als nieuwe klant bij ons bedrijf. Wij zijn blij dat we u mogen 
+        verwelkomen en kijken uit naar een prettige samenwerking.</p>
+        
+        <p>Als u vragen heeft, neem dan gerust contact met ons op. We staan u graag te woord.</p>
+        
+        <p>Met vriendelijke groet,<br>
+        <strong>Jarvis</strong></p>
+    </div>
+    <div class="footer">
+        <p>Deze e-mail is verzonden via het Jarvis CRM-systeem.</p>
+    </div>
+</body>
+</html>`
+            },
+            'invoice': {
+                'subject': 'Nieuwe factuur',
+                'content': `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+        .header { background-color: #673AB7; color: white; padding: 20px; }
+        .content { padding: 20px; }
+        .footer { margin-top: 30px; font-size: 0.8em; color: #777; border-top: 1px solid #eee; padding-top: 15px; }
+        .button { display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; 
+                 text-decoration: none; border-radius: 4px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Nieuwe Factuur</h2>
+    </div>
+    <div class="content">
+        <p>Beste klant,</p>
+        
+        <p>Hierbij ontvangt u onze factuur. De uiterste betaaldatum voor deze factuur vindt u op de factuur.</p>
+        
+        <p>Gelieve het bedrag over te maken naar het rekeningnummer vermeld op de factuur, 
+        onder vermelding van het factuurnummer.</p>
+        
+        <p>Met vriendelijke groet,<br>
+        <strong>Jarvis</strong></p>
+    </div>
+    <div class="footer">
+        <p>Deze e-mail is verzonden via het Jarvis CRM-systeem.</p>
+    </div>
+</body>
+</html>`
+            },
+            'general': {
+                'subject': 'Bericht van Jarvis',
+                'content': `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
+        .header { background-color: #607D8B; color: white; padding: 20px; }
+        .content { padding: 20px; }
+        .footer { margin-top: 30px; font-size: 0.8em; color: #777; border-top: 1px solid #eee; padding-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Bericht van Jarvis</h2>
+    </div>
+    <div class="content">
+        <p>Beste klant,</p>
+        
+        <p>Hartelijk dank voor het gebruik van onze diensten.</p>
+        
+        <p>Met vriendelijke groet,<br>
+        <strong>Jarvis</strong></p>
+    </div>
+    <div class="footer">
+        <p>Deze e-mail is verzonden via het Jarvis CRM-systeem.</p>
+    </div>
+</body>
+</html>`
+            }
+        };
+        
+        // Template laden bij klikken op de knop
+        loadTemplateBtn.addEventListener('click', function() {
+            const selectedTemplate = templateSelect.value;
+            
+            if (selectedTemplate && templates[selectedTemplate]) {
+                if (confirm('Weet u zeker dat u deze template wilt laden? De huidige inhoud wordt vervangen.')) {
+                    contentTextarea.value = templates[selectedTemplate].content;
+                    subjectInput.value = templates[selectedTemplate].subject;
+                }
+            } else {
+                alert('Selecteer eerst een template.');
+            }
+        });
+        
+        // Bij page load, als een klant en template zijn geselecteerd (vanuit de index pagina)
+        if (templateSelect.value && customerSelect.value) {
+            const selectedTemplate = templateSelect.value;
+            if (templates[selectedTemplate]) {
+                contentTextarea.value = templates[selectedTemplate].content;
+                subjectInput.value = templates[selectedTemplate].subject;
+            }
+        }
+    });
+</script>
+{% endblock %}

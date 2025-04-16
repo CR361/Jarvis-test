@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-helmet-safety"></i> Aannemer Bewerken
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('edit_contractor', contractor_id=contractor.id) }}">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">{{ form.name.label }} <span class="text-danger">*</span></label>
+                            {{ form.name(class="form-control") }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="specialty" class="form-label">{{ form.specialty.label }}</label>
+                            {{ form.specialty(class="form-control") }}
+                            {% if form.specialty.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.specialty.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">{{ form.email.label }}</label>
+                                    {{ form.email(class="form-control") }}
+                                    {% if form.email.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.email.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phone" class="form-label">{{ form.phone.label }}</label>
+                                    {{ form.phone(class="form-control") }}
+                                    {% if form.phone.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.phone.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">{{ form.notes.label }}</label>
+                            {{ form.notes(class="form-control", rows=3) }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-save"></i> Wijzigingen Opslaan
+                            </button>
+                            <a href="{{ url_for('contractor_list') }}" class="btn btn-secondary">
+                                <i class="fa-solid fa-ban"></i> Annuleren
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            {% if contractor.assigned_tasks|length > 0 %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Toegewezen Taken</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Beschrijving</th>
+                                        <th>Klant</th>
+                                        <th>Status</th>
+                                        <th>Actie</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for task in contractor.assigned_tasks %}
+                                        <tr>
+                                            <td>{{ task.description }}</td>
+                                            <td>
+                                                <a href="{{ url_for('customer_view', customer_id=task.customer.id) }}">
+                                                    {{ task.customer.name }}
+                                                </a>
+                                            </td>
+                                            <td>
+                                                {% if task.is_completed %}
+                                                    <span class="badge bg-success">Voltooid</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Open</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('edit_checklist_item', item_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fa-solid fa-pen-to-square"></i> Bewerken
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

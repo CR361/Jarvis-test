@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Jarvis{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-5">
+    <h1 class="mb-3 text-center fw-bold" style="font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; font-size: 2.2rem;">COMMAND CENTER</h1>
+    <div class="text-center mb-4">
+        <p class="lead" style="font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px; font-weight: 300;">
+            Welkom bij uw persoonlijke business management systeem
+        </p>
+    </div>
+</div>
+
+<!-- Stats cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card h-100" style="border-top: 3px solid var(--future-accent); overflow: hidden;">
+            <div class="card-body text-center position-relative">
+                <div class="position-relative">
+                    <h6 class="text-uppercase fw-bold mb-3" style="font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;">KLANTEN</h6>
+                    <h2 class="display-3 mb-2" style="font-family: 'Rajdhani', sans-serif; font-weight: 700;">{{ customer_count }}</h2>
+                    <div class="mt-3">
+                        <i class="fas fa-users fa-2x text-black-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('customer_list') }}" class="btn btn-sm btn-glow w-100">
+                    BEKIJK ALLE KLANTEN <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card h-100" style="border-top: 3px solid var(--future-accent); overflow: hidden;">
+            <div class="card-body text-center position-relative">
+                <div class="position-relative">
+                    <h6 class="text-uppercase fw-bold mb-3" style="font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;">FACTUREN</h6>
+                    <h2 class="display-3 mb-2" style="font-family: 'Rajdhani', sans-serif; font-weight: 700;">{{ invoice_count }}</h2>
+                    <div class="mt-3">
+                        <i class="fas fa-file-invoice-dollar fa-2x text-black-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('invoice_list') }}" class="btn btn-sm btn-glow w-100">
+                    BEKIJK ALLE FACTUREN <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card h-100" style="border-top: 3px solid var(--future-danger); overflow: hidden;">
+            <div class="card-body text-center position-relative">
+                <div class="position-relative">
+                    <h6 class="text-uppercase fw-bold mb-3" style="font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;">OPENSTAAND</h6>
+                    <h2 class="display-3 mb-2" style="font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--future-danger);">€{{ "%.2f"|format(total_outstanding) }}</h2>
+                    <div class="mt-3">
+                        <i class="fas fa-money-bill-wave fa-2x text-black-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('invoice_list', status='unpaid') }}" class="btn btn-sm btn-glow w-100">
+                    BEKIJK ONBETAALDE FACTUREN <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card h-100" style="border-top: 3px solid var(--future-accent); overflow: hidden;">
+            <div class="card-body text-center position-relative">
+                <div class="position-relative">
+                    <h6 class="text-uppercase fw-bold mb-3" style="font-family: 'Rajdhani', sans-serif; letter-spacing: 1px;">CONTRACTEN</h6>
+                    <h2 class="display-3 mb-2" style="font-family: 'Rajdhani', sans-serif; font-weight: 700;">{{ pending_contracts|length }}</h2>
+                    <div class="mt-3">
+                        <i class="fas fa-file-signature fa-2x text-black-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('contract_list') }}" class="btn btn-sm btn-glow w-100">
+                    BEKIJK ALLE CONTRACTEN <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Content sections -->
+<div class="row">
+    <!-- Unpaid invoices -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100" style="border-top: 3px solid var(--future-danger);">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-exclamation-circle me-2 text-danger"></i>
+                <span style="font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; font-weight: 600;">ONBETAALDE FACTUREN</span>
+            </div>
+            <div class="card-body">
+                {% if unpaid_invoices %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Factuurnr.</th>
+                                <th>Klant</th>
+                                <th>Vervaldatum</th>
+                                <th>Bedrag</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in unpaid_invoices %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}">
+                                        {{ invoice.invoice_number }}
+                                    </a>
+                                </td>
+                                <td>{{ invoice.customer.name }}</td>
+                                <td>{{ invoice.due_date.strftime('%d-%m-%Y') }}</td>
+                                <td>€ {{ "%.2f"|format(invoice.total_amount) }}</td>
+                                <td>
+                                    {% if invoice.due_date < current_date %}
+                                    <span class="badge bg-danger">Verlopen</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Openstaand</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center py-3">Geen onbetaalde facturen gevonden.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('invoice_list', status='unpaid') }}" class="btn btn-sm btn-glow w-100">
+                    BEKIJK ALLE ONBETAALDE FACTUREN <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent communications -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-comments me-2"></i>Recente communicatie
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_communications %}
+                <div class="list-group">
+                    {% for comm in recent_communications %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ comm.subject or 'Geen onderwerp' }}</h6>
+                            <small>{{ comm.date.strftime('%d-%m-%Y') }}</small>
+                        </div>
+                        <p class="mb-1">{{ comm.content|truncate(100) }}</p>
+                        <small>
+                            <span class="badge bg-secondary">{{ comm.type }}</span>
+                            <a href="{{ url_for('customer_view', customer_id=comm.customer_id) }}">{{ comm.customer.name }}</a>
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-center py-3">Geen recente communicatie gevonden.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending contracts -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-signature me-2"></i>Contracten in behandeling
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if pending_contracts %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Titel</th>
+                                <th>Klant</th>
+                                <th>Status</th>
+                                <th>Datum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contract in pending_contracts %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('contract_view', contract_id=contract.id) }}">
+                                        {{ contract.title }}
+                                    </a>
+                                </td>
+                                <td>{{ contract.customer.name }}</td>
+                                <td>
+                                    {% if contract.status == 'concept' %}
+                                    <span class="badge bg-secondary">Concept</span>
+                                    {% elif contract.status == 'verzonden' %}
+                                    <span class="badge bg-warning">Verzonden</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ contract.updated_at.strftime('%d-%m-%Y') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center py-3">Geen contracten in behandeling gevonden.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('contract_list') }}" class="btn btn-sm btn-outline-primary">
+                    Bekijk alle contracten
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent invoices -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>Recente facturen
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_invoices %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Factuurnr.</th>
+                                <th>Klant</th>
+                                <th>Datum</th>
+                                <th>Bedrag</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in recent_invoices %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}">
+                                        {{ invoice.invoice_number }}
+                                    </a>
+                                </td>
+                                <td>{{ invoice.customer.name }}</td>
+                                <td>{{ invoice.issue_date.strftime('%d-%m-%Y') }}</td>
+                                <td>€ {{ "%.2f"|format(invoice.total_amount) }}</td>
+                                <td>
+                                    {% if invoice.is_paid %}
+                                    <span class="badge bg-success">Betaald</span>
+                                    {% elif invoice.due_date < current_date %}
+                                    <span class="badge bg-danger">Verlopen</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Openstaand</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-center py-3">Geen recente facturen gevonden.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('invoice_list') }}" class="btn btn-sm btn-outline-success">
+                    Bekijk alle facturen
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

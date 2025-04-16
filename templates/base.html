@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Jarvis{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts - Orbitron voor futuristisch lettertype -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Futuristic Navigation bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand futuristic-brand" href="{{ url_for('index') }}">
+                JARVIS
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{{ url_for('index') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/customers' in request.path %}active{% endif %}" href="{{ url_for('customer_list') }}">
+                            <i class="fas fa-users me-1"></i> Klanten
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/invoices' in request.path %}active{% endif %}" href="{{ url_for('invoice_list') }}">
+                            <i class="fas fa-file-invoice-dollar me-1"></i> Facturen
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/contracts' in request.path %}active{% endif %}" href="{{ url_for('contract_list') }}">
+                            <i class="fas fa-file-signature me-1"></i> Contracten
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/emails' in request.path %}active{% endif %}" href="{{ url_for('email_list') }}">
+                            <i class="fas fa-envelope me-1"></i> E-mails
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/checklist' in request.path %}active{% endif %}" href="{{ url_for('checklist') }}">
+                            <i class="fas fa-tasks me-1"></i> Checklist
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/contractors' in request.path %}active{% endif %}" href="{{ url_for('contractor_list') }}">
+                            <i class="fas fa-hard-hat me-1"></i> Aannemers
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <a href="{{ url_for('backup_index') }}" class="btn btn-glow btn-sm">
+                        <i class="fas fa-download me-1"></i> Backup
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash messages -->
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main content -->
+    <div class="container my-4">
+        <div class="row">
+            <div class="col">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3">
+        <div class="container text-center">
+            <span class="text-muted">© 2025 <span class="futuristic-brand" style="font-size: 1rem;">JARVIS</span> - All Rights Reserved</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    
+    <!-- Futuristic Effects JS -->
+    <script src="{{ url_for('static', filename='js/futuristic-effects.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

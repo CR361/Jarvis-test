@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-4">
+        <h1>
+            <i class="fa-solid fa-helmet-safety"></i> Aannemers
+        </h1>
+        <div>
+            <a href="{{ url_for('create_contractor') }}" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> Nieuwe Aannemer
+            </a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            {% if contractors %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Naam</th>
+                                <th>Specialiteit</th>
+                                <th>E-mail</th>
+                                <th>Telefoon</th>
+                                <th>Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contractor in contractors %}
+                                <tr>
+                                    <td>{{ contractor.name }}</td>
+                                    <td>{{ contractor.specialty or '-' }}</td>
+                                    <td>{{ contractor.email or '-' }}</td>
+                                    <td>{{ contractor.phone or '-' }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('edit_contractor', contractor_id=contractor.id) }}" class="btn btn-sm btn-outline-primary" title="Bewerken">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </a>
+                                            
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Verwijderen" 
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal{{ contractor.id }}">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Delete Modal -->
+                                        <div class="modal fade" id="deleteModal{{ contractor.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ contractor.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteModalLabel{{ contractor.id }}">Aannemer verwijderen</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        Weet u zeker dat u aannemer <strong>{{ contractor.name }}</strong> wilt verwijderen?
+                                                        {% if contractor.assigned_tasks|length > 0 %}
+                                                            <div class="alert alert-warning mt-3">
+                                                                <i class="fa-solid fa-exclamation-triangle"></i> 
+                                                                Deze aannemer heeft nog {{ contractor.assigned_tasks|length }} toegewezen taken. 
+                                                                U kunt deze aannemer pas verwijderen nadat alle taken zijn voltooid of toegewezen aan een andere aannemer.
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                                                        <form action="{{ url_for('delete_contractor', contractor_id=contractor.id) }}" method="POST">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                            <button type="submit" class="btn btn-danger" {% if contractor.assigned_tasks|length > 0 %}disabled{% endif %}>
+                                                                Verwijderen
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle"></i> Er zijn nog geen aannemers toegevoegd.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

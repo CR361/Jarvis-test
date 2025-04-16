@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Nieuw contract - Klant selecteren - Jarvis CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-file-signature text-primary me-2"></i>Nieuw contract
+    </h1>
+    <a href="{{ url_for('contract_list') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Terug naar contracten
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Selecteer een klant voor het contract</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-4">Selecteer de klant waarvoor u een nieuw contract wilt aanmaken.</p>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Naam</th>
+                        <th>Bedrijf</th>
+                        <th>Email</th>
+                        <th>Actie</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td>{{ customer.name }}</td>
+                        <td>{{ customer.company or '-' }}</td>
+                        <td>{{ customer.email }}</td>
+                        <td>
+                            <a href="{{ url_for('create_contract', customer_id=customer.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus-circle me-1"></i>Contract maken
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% if not customers %}
+                    <tr>
+                        <td colspan="4" class="text-center py-3 text-muted">
+                            <i class="fas fa-info-circle me-2"></i>Geen klanten gevonden.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}Nieuwe Factuur - Jarvis CRM{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Functie om nieuwe factuurregel toe te voegen
+    const addItemBtn = document.getElementById('add-item');
+    const itemsContainer = document.getElementById('invoice-items');
+    
+    if (addItemBtn) {
+        addItemBtn.addEventListener('click', function() {
+            // Kloon de eerste item rij als template
+            const itemTemplate = document.querySelector('.invoice-item').cloneNode(true);
+            
+            // Reset de waarden
+            const inputs = itemTemplate.querySelectorAll('input');
+            inputs.forEach(input => {
+                if (input.name === 'quantities[]') {
+                    input.value = '1';  // Standaardwaarde voor aantal
+                } else if (input.name !== 'unit_prices[]') {
+                    input.value = '';  // Leeg voor omschrijving
+                } else {
+                    input.value = '';  // Leeg voor prijs
+                }
+            });
+            
+            // Voeg verwijderknop toe aan nieuwe rijen
+            const rowHeader = itemTemplate.querySelector('.row');
+            const removeBtn = document.createElement('div');
+            removeBtn.className = 'col-12 mt-2 text-end';
+            removeBtn.innerHTML = `
+                <button type="button" class="btn btn-outline-danger btn-sm remove-item">
+                    <i class="fas fa-trash me-1"></i> Verwijderen
+                </button>
+            `;
+            rowHeader.appendChild(removeBtn);
+            
+            // Voeg de nieuwe rij toe aan de container
+            itemsContainer.appendChild(itemTemplate);
+            
+            // Event listener voor verwijderknop
+            const removeBtns = document.querySelectorAll('.remove-item');
+            removeBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.invoice-item').remove();
+                });
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-file-invoice-dollar text-primary me-2"></i>Nieuwe Factuur
+    </h1>
+    <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Terug naar facturen
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Factuur aanmaken</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('create_invoice') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="customer_id" class="form-label">Klant *</label>
+                    <select class="form-select" id="customer_id" name="customer_id" required>
+                        <option value="">-- Selecteer een klant --</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}">{{ customer.name }} {% if customer.company %}({{ customer.company }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="issue_date" class="form-label">Factuurdatum *</label>
+                    <input type="date" class="form-control" id="issue_date" name="issue_date" value="{{ today.strftime('%Y-%m-%d') }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="due_date" class="form-label">Vervaldatum *</label>
+                    <input type="date" class="form-control" id="due_date" name="due_date" value="{{ due_date.strftime('%Y-%m-%d') }}" required>
+                </div>
+            </div>
+            
+            <h5 class="mb-3 mt-4">Factuurregels</h5>
+            
+            <div id="invoice-items">
+                <div class="invoice-item card mb-3">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Omschrijving *</label>
+                                <input type="text" class="form-control" name="descriptions[]" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Aantal *</label>
+                                <input type="number" class="form-control" name="quantities[]" value="1" min="0.01" step="0.01" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Prijs per eenheid *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input type="number" class="form-control" name="unit_prices[]" min="0.01" step="0.01" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" id="add-item" class="btn btn-outline-primary mb-4">
+                <i class="fas fa-plus-circle me-2"></i>Extra factuurregel toevoegen
+            </button>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">Opmerkingen</label>
+                <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-secondary me-md-2">Annuleren</a>
+                <button type="submit" class="btn btn-primary">Factuur aanmaken</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Recente facturen</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nummer</th>
+                    <th>Klant</th>
+                    <th>Datum</th>
+                    <th>Bedrag</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in recent_invoices %}
+                <tr>
+                    <td><a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}">{{ invoice.invoice_number }}</a></td>
+                    <td>{{ invoice.customer.name }}</td>
+                    <td>{{ invoice.issue_date.strftime('%d-%m-%Y') }}</td>
+                    <td>€ {{ "%.2f"|format(invoice.total_amount)|replace(".", ",") }}</td>
+                    <td>
+                        {% if invoice.is_paid %}
+                        <span class="badge bg-success">Betaald</span>
+                        {% elif invoice.due_date < today %}
+                        <span class="badge bg-danger">Verlopen</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Openstaand</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                
+                {% if not recent_invoices %}
+                <tr>
+                    <td colspan="5" class="text-center py-3 text-muted">
+                        <i class="fas fa-info-circle me-2"></i>Geen recente facturen gevonden.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
