@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Communicatiehistorie{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-4">
+        <h1>
+            <i class="fa-solid fa-comments"></i> Communicatiehistorie
+        </h1>
+        <div>
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="newCommunicationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-plus"></i> Nieuwe Communicatie
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="newCommunicationDropdown">
+                    {% if customers %}
+                        {% for customer in customers %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('create_communication', customer_id=customer.id) }}">
+                                    {{ customer.name }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                        <li><hr class="dropdown-divider"></li>
+                    {% endif %}
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('customer_list') }}">
+                            <i class="fa-solid fa-user-plus"></i> Nieuwe klant toevoegen
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('communications_list') }}" class="row g-3">
+                <div class="col-md-3">
+                    <select name="type" class="form-select">
+                        <option value="">Alle types</option>
+                        <option value="email" {% if request.args.get('type') == 'email' %}selected{% endif %}>E-mail</option>
+                        <option value="telefoon" {% if request.args.get('type') == 'telefoon' %}selected{% endif %}>Telefoongesprek</option>
+                        <option value="vergadering" {% if request.args.get('type') == 'vergadering' %}selected{% endif %}>Vergadering</option>
+                        <option value="notitie" {% if request.args.get('type') == 'notitie' %}selected{% endif %}>Interne notitie</option>
+                        <option value="anders" {% if request.args.get('type') == 'anders' %}selected{% endif %}>Anders</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="search" class="form-control" placeholder="Zoeken op onderwerp of klant..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fa-solid fa-filter"></i> Filter
+                    </button>
+                </div>
+                {% if request.args.get('search') or request.args.get('type') %}
+                    <div class="col-md-2">
+                        <a href="{{ url_for('communications_list') }}" class="btn btn-secondary w-100">
+                            <i class="fa-solid fa-times"></i> Wissen
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            {% if communications %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Klant</th>
+                                <th>Type</th>
+                                <th>Onderwerp</th>
+                                <th>Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for communication in communications %}
+                                {% set icon_class = {
+                                    'email': 'fa-envelope',
+                                    'telefoon': 'fa-phone',
+                                    'vergadering': 'fa-users',
+                                    'notitie': 'fa-sticky-note',
+                                    'anders': 'fa-comment'
+                                } %}
+                                <tr>
+                                    <td>{{ communication.date.strftime('%d-%m-%Y') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('customer_view', customer_id=communication.customer.id) }}">
+                                            {{ communication.customer.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <i class="fa-solid {{ icon_class.get(communication.type, 'fa-comment') }} me-1"></i>
+                                        {{ communication.type|capitalize }}
+                                    </td>
+                                    <td>{{ communication.subject }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" title="Bekijken" 
+                                                    data-bs-toggle="modal" data-bs-target="#viewModal{{ communication.id }}">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Verwijderen" 
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal{{ communication.id }}">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- View Modal -->
+                                        <div class="modal fade" id="viewModal{{ communication.id }}" tabindex="-1" aria-labelledby="viewModalLabel{{ communication.id }}" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="viewModalLabel{{ communication.id }}">
+                                                            <i class="fa-solid {{ icon_class.get(communication.type, 'fa-comment') }} me-1"></i>
+                                                            {{ communication.subject or communication.type|capitalize }}
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <strong>Klant:</strong> 
+                                                            <a href="{{ url_for('customer_view', customer_id=communication.customer.id) }}">
+                                                                {{ communication.customer.name }}
+                                                            </a>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <strong>Datum:</strong> {{ communication.date.strftime('%d-%m-%Y %H:%M') }}
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <strong>Type:</strong> {{ communication.type|capitalize }}
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <strong>Inhoud:</strong>
+                                                            <div class="card mt-2">
+                                                                <div class="card-body">
+                                                                    {{ communication.content|nl2br|safe }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Delete Modal -->
+                                        <div class="modal fade" id="deleteModal{{ communication.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ communication.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteModalLabel{{ communication.id }}">Communicatie verwijderen</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        Weet u zeker dat u deze communicatie wilt verwijderen?
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                                                        <form action="{{ url_for('delete_communication', communication_id=communication.id) }}" method="POST">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                            <button type="submit" class="btn btn-danger">Verwijderen</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                {% if request.args.get('search') or request.args.get('type') %}
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-info-circle"></i> Geen communicatie gevonden voor uw zoekcriteria.
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-info-circle"></i> Er is nog geen communicatie geregistreerd.
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

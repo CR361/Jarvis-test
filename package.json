@@ -1,0 +1,13 @@
+{
+  "name": "crm-app",
+  "version": "1.0.0",
+  "description": "CRM Application",
+  "main": "main.py",
+  "scripts": {
+    "dev": "python main.py",
+    "start": "python main.py"
+  },
+  "dependencies": {
+    "value": "^0.3.3"
+  }
+}

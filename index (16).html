@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Contracten{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-4">
+        <h1>
+            <i class="fa-solid fa-file-signature"></i> Contracten
+        </h1>
+        <div>
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="newContractDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-plus"></i> Nieuw Contract
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="newContractDropdown">
+                    {% if customers %}
+                        {% for customer in customers %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('create_contract', customer_id=customer.id) }}">
+                                    {{ customer.name }}
+                                </a>
+                            </li>
+                        {% endfor %}
+                        <li><hr class="dropdown-divider"></li>
+                    {% endif %}
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('customer_list') }}">
+                            <i class="fa-solid fa-user-plus"></i> Nieuwe klant toevoegen
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('contract_list') }}" class="row g-3">
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">Alle contracten</option>
+                        <option value="concept" {% if request.args.get('status') == 'concept' %}selected{% endif %}>Concept</option>
+                        <option value="verzonden" {% if request.args.get('status') == 'verzonden' %}selected{% endif %}>Verzonden</option>
+                        <option value="ondertekend" {% if request.args.get('status') == 'ondertekend' %}selected{% endif %}>Ondertekend</option>
+                        <option value="geweigerd" {% if request.args.get('status') == 'geweigerd' %}selected{% endif %}>Geweigerd</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="search" class="form-control" placeholder="Zoeken op titel of klant..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fa-solid fa-filter"></i> Filter
+                    </button>
+                </div>
+                {% if request.args.get('search') or request.args.get('status') %}
+                    <div class="col-md-2">
+                        <a href="{{ url_for('contract_list') }}" class="btn btn-secondary w-100">
+                            <i class="fa-solid fa-times"></i> Wissen
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            {% if contracts %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Titel</th>
+                                <th>Klant</th>
+                                <th>Aangemaakt</th>
+                                <th>Status</th>
+                                <th>Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contract in contracts %}
+                                {% set status_class = {
+                                    'concept': 'bg-secondary',
+                                    'verzonden': 'bg-primary',
+                                    'ondertekend': 'bg-success',
+                                    'geweigerd': 'bg-danger'
+                                } %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('contract_view', contract_id=contract.id) }}">
+                                            {{ contract.title }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('customer_view', customer_id=contract.customer.id) }}">
+                                            {{ contract.customer.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ contract.created_at.strftime('%d-%m-%Y') }}</td>
+                                    <td>
+                                        <span class="badge {{ status_class[contract.status] }}">
+                                            {{ contract.status_display() }}
+                                        </span>
+                                        {% if contract.status == 'ondertekend' and contract.signed_at %}
+                                            <small class="text-muted d-block">
+                                                Ondertekend op {{ contract.signed_at.strftime('%d-%m-%Y') }}
+                                            </small>
+                                        {% endif %}
+                                        {% if contract.status == 'verzonden' and contract.sent_at %}
+                                            <small class="text-muted d-block">
+                                                Verzonden op {{ contract.sent_at.strftime('%d-%m-%Y') }}
+                                            </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('contract_view', contract_id=contract.id) }}" class="btn btn-sm btn-outline-primary" title="Bekijken">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                            {% if contract.status == 'concept' %}
+                                                <a href="{{ url_for('send_contract', contract_id=contract.id) }}" class="btn btn-sm btn-outline-info" title="Verzenden naar klant">
+                                                    <i class="fa-solid fa-paper-plane"></i>
+                                                </a>
+                                            {% endif %}
+                                            {% if contract.status in ['concept', 'verzonden'] %}
+                                                <button type="button" class="btn btn-sm btn-outline-danger" title="Verwijderen" 
+                                                        data-bs-toggle="modal" data-bs-target="#deleteModal{{ contract.id }}">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Delete Modal -->
+                                        <div class="modal fade" id="deleteModal{{ contract.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ contract.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteModalLabel{{ contract.id }}">Contract verwijderen</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        Weet u zeker dat u contract <strong>{{ contract.title }}</strong> wilt verwijderen?
+                                                        {% if contract.status == 'verzonden' %}
+                                                            <div class="alert alert-warning mt-3">
+                                                                <i class="fa-solid fa-exclamation-triangle"></i> 
+                                                                Dit contract is al verzonden naar de klant. Verwijderen kan tot verwarring leiden.
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                                                        <form action="{{ url_for('delete_contract', contract_id=contract.id) }}" method="POST">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                            <button type="submit" class="btn btn-danger">Verwijderen</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                {% if request.args.get('search') or request.args.get('status') %}
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-info-circle"></i> Geen contracten gevonden voor uw zoekcriteria.
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-info-circle"></i> Er zijn nog geen contracten aangemaakt.
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

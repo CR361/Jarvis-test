@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ customer.name }} - Jarvis CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <h1>
+        <i class="fas fa-user text-primary me-2"></i>{{ customer.name }}
+    </h1>
+    <div class="btn-group">
+        <a href="{{ url_for('edit_customer', customer_id=customer.id) }}" class="btn btn-outline-primary">
+            <i class="fas fa-edit me-2"></i>Bewerken
+        </a>
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCustomerModal">
+            <i class="fas fa-trash-alt me-2"></i>Verwijderen
+        </button>
+    </div>
+</div>
+
+<!-- Customer info card -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Klantgegevens</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-md-4 fw-bold">Bedrijfsnaam:</div>
+                    <div class="col-md-8">{{ customer.company or '-' }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 fw-bold">KVK-nummer:</div>
+                    <div class="col-md-8">{{ customer.kvk_number or '-' }}</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 fw-bold">E-mail:</div>
+                    <div class="col-md-8">
+                        <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 fw-bold">Telefoon:</div>
+                    <div class="col-md-8">
+                        {% if customer.phone %}
+                        <a href="tel:{{ customer.phone }}">{{ customer.phone }}</a>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 fw-bold">Adres:</div>
+                    <div class="col-md-8">
+                        {% if customer.address %}
+                        {{ customer.address }}<br>
+                        {{ customer.postal_code }} {{ customer.city }}<br>
+                        {{ customer.country }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4 fw-bold">Klant sinds:</div>
+                    <div class="col-md-8">{{ customer.created_at.strftime('%d-%m-%Y') }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header">
+                <h5 class="mb-0">Financieel overzicht</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">Totaal gefactureerd</h6>
+                                <h3 class="card-text text-primary">€ {{ "%.2f"|format(customer.total_invoiced()) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">Openstaand bedrag</h6>
+                                <h3 class="card-text {% if customer.total_outstanding() > 0 %}text-danger{% else %}text-success{% endif %}">
+                                    € {{ "%.2f"|format(customer.total_outstanding()) }}
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="fw-bold mb-2">Notities:</h6>
+                        <p class="card-text">{{ customer.notes or 'Geen notities.' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action buttons -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('create_invoice') }}" class="btn btn-primary">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>Nieuwe factuur
+                    </a>
+                    <a href="{{ url_for('create_communication', customer_id=customer.id) }}" class="btn btn-info">
+                        <i class="fas fa-comment-alt me-2"></i>Nieuwe communicatie
+                    </a>
+                    <a href="{{ url_for('create_contract', customer_id=customer.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-file-signature me-2"></i>Nieuw contract
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs for related data -->
+<ul class="nav nav-tabs mb-4" id="customerTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="invoices-tab" data-bs-toggle="tab" data-bs-target="#invoices" type="button" role="tab" aria-controls="invoices" aria-selected="true">
+            Facturen
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="communications-tab" data-bs-toggle="tab" data-bs-target="#communications" type="button" role="tab" aria-controls="communications" aria-selected="false">
+            Communicatie
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="contracts-tab" data-bs-toggle="tab" data-bs-target="#contracts" type="button" role="tab" aria-controls="contracts" aria-selected="false">
+            Contracten
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="customerTabsContent">
+    <!-- Invoices tab -->
+    <div class="tab-pane fade show active" id="invoices" role="tabpanel" aria-labelledby="invoices-tab">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Facturen</h5>
+                <a href="{{ url_for('create_invoice') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i>Nieuwe factuur
+                </a>
+            </div>
+            {% if invoices %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Factuurnr.</th>
+                            <th>Datum</th>
+                            <th>Vervaldatum</th>
+                            <th>Bedrag</th>
+                            <th>Status</th>
+                            <th>Acties</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}">
+                                    {{ invoice.invoice_number }}
+                                </a>
+                            </td>
+                            <td>{{ invoice.issue_date.strftime('%d-%m-%Y') }}</td>
+                            <td>{{ invoice.due_date.strftime('%d-%m-%Y') }}</td>
+                            <td>€ {{ "%.2f"|format(invoice.total_amount) }}</td>
+                            <td>
+                                {% if invoice.is_paid %}
+                                <span class="badge bg-success">Betaald</span>
+                                {% elif invoice.due_date < current_date %}
+                                <span class="badge bg-danger">Verlopen</span>
+                                {% else %}
+                                <span class="badge bg-warning">Openstaand</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body">
+                <p class="text-center py-3">Geen facturen gevonden voor deze klant.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Communications tab -->
+    <div class="tab-pane fade" id="communications" role="tabpanel" aria-labelledby="communications-tab">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Communicatiegeschiedenis</h5>
+                <a href="{{ url_for('create_communication', customer_id=customer.id) }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i>Nieuwe communicatie
+                </a>
+            </div>
+            {% if communications %}
+            <div class="list-group list-group-flush">
+                {% for comm in communications %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-1">{{ comm.subject or 'Geen onderwerp' }}</h6>
+                        <div>
+                            <span class="badge bg-secondary me-2">{{ comm.type }}</span>
+                            <small>{{ comm.date.strftime('%d-%m-%Y %H:%M') }}</small>
+                            <form method="POST" action="{{ url_for('delete_communication', communication_id=comm.id) }}" class="d-inline ms-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze communicatie wilt verwijderen?')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <p class="mb-1">{{ comm.content }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="card-body">
+                <p class="text-center py-3">Geen communicatie gevonden voor deze klant.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Contracts tab -->
+    <div class="tab-pane fade" id="contracts" role="tabpanel" aria-labelledby="contracts-tab">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Contracten</h5>
+                <a href="{{ url_for('create_contract', customer_id=customer.id) }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i>Nieuw contract
+                </a>
+            </div>
+            {% if contracts %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Titel</th>
+                            <th>Status</th>
+                            <th>Aangemaakt op</th>
+                            <th>Laatste update</th>
+                            <th>Acties</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contract in contracts %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('contract_view', contract_id=contract.id) }}">
+                                    {{ contract.title }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if contract.status == 'concept' %}
+                                <span class="badge bg-secondary">Concept</span>
+                                {% elif contract.status == 'verzonden' %}
+                                <span class="badge bg-warning">Verzonden</span>
+                                {% elif contract.status == 'ondertekend' %}
+                                <span class="badge bg-success">Ondertekend</span>
+                                {% elif contract.status == 'geweigerd' %}
+                                <span class="badge bg-danger">Geweigerd</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ contract.created_at.strftime('%d-%m-%Y') }}</td>
+                            <td>{{ contract.updated_at.strftime('%d-%m-%Y') }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('contract_view', contract_id=contract.id) }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if contract.status == 'concept' %}
+                                    <form method="POST" action="{{ url_for('delete_contract', contract_id=contract.id) }}" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Weet je zeker dat je dit contract wilt verwijderen?')">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="card-body">
+                <p class="text-center py-3">Geen contracten gevonden voor deze klant.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Customer Modal -->
+<div class="modal fade" id="deleteCustomerModal" tabindex="-1" aria-labelledby="deleteCustomerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteCustomerModalLabel">Klant verwijderen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Weet je zeker dat je <strong>{{ customer.name }}</strong> wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.</p>
+                <p>Alle gerelateerde gegevens, inclusief facturen, communicatie en contracten, worden ook verwijderd.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <form method="POST" action="{{ url_for('delete_customer', customer_id=customer.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Verwijderen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

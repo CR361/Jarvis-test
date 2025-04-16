@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Aannemer Bewerken{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">Aannemer Bewerken</h1>
+        <div>
+            <a href="{{ url_for('contractor_list') }}" class="btn btn-outline-primary">Terug naar aannemers</a>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Aannemer "{{ contractor.name }}" bewerken</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Naam *</label>
+                            {{ form.name(class="form-control", id="name") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-mail</label>
+                            {{ form.email(class="form-control", id="email") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Telefoonnummer</label>
+                            {{ form.phone(class="form-control", id="phone") }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.phone.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="specialty" class="form-label">Specialiteit</label>
+                            {{ form.specialty(class="form-control", id="specialty") }}
+                            {% if form.specialty.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.specialty.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notities</label>
+                            {{ form.notes(class="form-control", id="notes", rows="3") }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('contractor_list') }}" class="btn btn-secondary">Annuleren</a>
+                            <button type="submit" class="btn btn-primary">Opslaan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

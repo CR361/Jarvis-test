@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Voltooide Taken{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">Voltooide Taken</h1>
+        <div>
+            <a href="{{ url_for('checklist') }}" class="btn btn-outline-primary">Terug naar actieve taken</a>
+        </div>
+    </div>
+
+    {% if not items %}
+        <div class="alert alert-info">
+            <p class="mb-0">Er zijn momenteel geen voltooide taken.</p>
+        </div>
+    {% else %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Voltooide taken</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%">Omschrijving</th>
+                                <th style="width: 20%">Klant</th>
+                                <th style="width: 20%">Toegewezen aan</th>
+                                <th style="width: 15%">Voltooid op</th>
+                                <th style="width: 15%">Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                                <tr>
+                                    <td>{{ item.description }}</td>
+                                    <td>{{ item.customer.name }}</td>
+                                    <td>
+                                        {% if item.contractor_id and item.assigned_contractor %}
+                                            <span class="badge bg-info text-dark">{{ item.assigned_contractor.name }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Niet toegewezen</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.completed_at.strftime('%d-%m-%Y') }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editItemModal{{ item.id }}">
+                                            Bewerken
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Modal voor het bewerken van het checklist item -->
+                                <div class="modal fade" id="editItemModal{{ item.id }}" tabindex="-1" aria-labelledby="editItemModalLabel{{ item.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form action="{{ url_for('update_checklist_item', item_id=item.id) }}" method="post">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="editItemModalLabel{{ item.id }}">Taak bewerken</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Klant:</label>
+                                                        <p class="form-control-static">{{ item.customer.name }}</p>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Omschrijving:</label>
+                                                        <p class="form-control-static">{{ item.description }}</p>
+                                                    </div>
+                                                    <div class="mb-3 form-check">
+                                                        <input type="checkbox" name="is_completed" class="form-check-input" id="is_completed{{ item.id }}" {% if item.is_completed %}checked{% endif %}>
+                                                        <label class="form-check-label" for="is_completed{{ item.id }}">Taak voltooid</label>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label for="notes{{ item.id }}" class="form-label">Notities:</label>
+                                                        <textarea name="notes" id="notes{{ item.id }}" class="form-control" rows="3">{{ item.notes or '' }}</textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                                                    <button type="submit" class="btn btn-primary">Opslaan</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

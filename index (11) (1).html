@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Aannemers Beheren{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">Aannemers Beheren</h1>
+        <div>
+            <a href="{{ url_for('checklist') }}" class="btn btn-outline-primary">Terug naar checklist</a>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Aannemers</h5>
+                </div>
+                <div class="card-body">
+                    {% if not contractors %}
+                        <div class="alert alert-info">
+                            <p class="mb-0">Er zijn nog geen aannemers toegevoegd. Gebruik het formulier rechts om een nieuwe aannemer toe te voegen.</p>
+                        </div>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Naam</th>
+                                        <th>Specialiteit</th>
+                                        <th>Contact</th>
+                                        <th>Acties</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for contractor in contractors %}
+                                        <tr>
+                                            <td>{{ contractor.name }}</td>
+                                            <td>{{ contractor.specialty or '-' }}</td>
+                                            <td>
+                                                {% if contractor.email %}
+                                                    <div>{{ contractor.email }}</div>
+                                                {% endif %}
+                                                {% if contractor.phone %}
+                                                    <div>{{ contractor.phone }}</div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{{ url_for('edit_contractor', contractor_id=contractor.id) }}" class="btn btn-sm btn-outline-primary">Bewerken</a>
+                                                    
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#deleteContractorModal{{ contractor.id }}">
+                                                        Verwijderen
+                                                    </button>
+                                                </div>
+                                                
+                                                <!-- Modal voor het verwijderen van de aannemer -->
+                                                <div class="modal fade" id="deleteContractorModal{{ contractor.id }}" tabindex="-1" aria-labelledby="deleteContractorModalLabel{{ contractor.id }}" aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="deleteContractorModalLabel{{ contractor.id }}">Aannemer verwijderen</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p>Weet u zeker dat u aannemer <strong>{{ contractor.name }}</strong> wilt verwijderen?</p>
+                                                                <p class="text-danger">Let op: Als deze aannemer is toegewezen aan taken, zal het verwijderen mislukken.</p>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                                                                <form action="{{ url_for('delete_contractor', contractor_id=contractor.id) }}" method="post">
+                                                                    <button type="submit" class="btn btn-danger">Verwijderen</button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Nieuwe Aannemer Toevoegen</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Naam *</label>
+                            {{ form.name(class="form-control", id="name", placeholder="Vul de naam in") }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-mail</label>
+                            {{ form.email(class="form-control", id="email", placeholder="Vul het e-mailadres in") }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Telefoonnummer</label>
+                            {{ form.phone(class="form-control", id="phone", placeholder="Vul het telefoonnummer in") }}
+                            {% if form.phone.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.phone.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="specialty" class="form-label">Specialiteit</label>
+                            {{ form.specialty(class="form-control", id="specialty", placeholder="Bijvoorbeeld: loodgieter, elektricien, etc.") }}
+                            {% if form.specialty.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.specialty.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notities</label>
+                            {{ form.notes(class="form-control", id="notes", rows="3") }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Aannemer Toevoegen</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

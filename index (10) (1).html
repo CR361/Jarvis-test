@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Checklist{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">Checklist Taken</h1>
+        <div>
+            <a href="{{ url_for('checklist_completed') }}" class="btn btn-outline-primary">Voltooide taken</a>
+            <a href="{{ url_for('contractor_list') }}" class="btn btn-outline-secondary">Aannemers beheren</a>
+        </div>
+    </div>
+
+    {% if not items_by_customer %}
+        <div class="alert alert-info">
+            <p class="mb-0">Er zijn momenteel geen actieve taken in de checklist. Wanneer u facturen verzendt, worden de items automatisch toegevoegd aan de checklist.</p>
+        </div>
+    {% else %}
+        {% for customer_id, data in items_by_customer.items() %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Klant: {{ data.customer.name }}</h5>
+                    <small>{{ data.customer.company }}</small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%">Omschrijving</th>
+                                    <th style="width: 25%">Toegewezen aan</th>
+                                    <th style="width: 15%">Status</th>
+                                    <th style="width: 20%">Acties</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in data.items %}
+                                    <tr>
+                                        <td>{{ item.description }}</td>
+                                        <td>
+                                            {% if item.contractor_id and item.assigned_contractor %}
+                                                <span class="badge bg-info text-dark">{{ item.assigned_contractor.name }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Niet toegewezen</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.is_completed %}
+                                                <span class="badge bg-success">Voltooid</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Openstaand</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editItemModal{{ item.id }}">
+                                                Bewerken
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Modal voor het bewerken van het checklist item -->
+                                    <div class="modal fade" id="editItemModal{{ item.id }}" tabindex="-1" aria-labelledby="editItemModalLabel{{ item.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form action="{{ url_for('update_checklist_item', item_id=item.id) }}" method="post">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="editItemModalLabel{{ item.id }}">Taak bewerken</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Omschrijving:</label>
+                                                            <p class="form-control-static">{{ item.description }}</p>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="contractor_id{{ item.id }}" class="form-label">Toewijzen aan aannemer:</label>
+                                                            <select name="contractor_id" id="contractor_id{{ item.id }}" class="form-select">
+                                                                <option value="none">-- Selecteer aannemer --</option>
+                                                                {% for contractor in contractors %}
+                                                                    <option value="{{ contractor.id }}" {% if item.contractor_id == contractor.id %}selected{% endif %}>
+                                                                        {{ contractor.name }} {% if contractor.specialty %}({{ contractor.specialty }}){% endif %}
+                                                                    </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3 form-check">
+                                                            <input type="checkbox" name="is_completed" class="form-check-input" id="is_completed{{ item.id }}" {% if item.is_completed %}checked{% endif %}>
+                                                            <label class="form-check-label" for="is_completed{{ item.id }}">Taak voltooid</label>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="notes{{ item.id }}" class="form-label">Notities:</label>
+                                                            <textarea name="notes" id="notes{{ item.id }}" class="form-control" rows="3">{{ item.notes or '' }}</textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                                                        <button type="submit" class="btn btn-primary">Opslaan</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}

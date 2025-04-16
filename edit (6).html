@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Factuur bewerken{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Reference to the item container
+    const itemContainer = document.getElementById('item-container');
+    // Reference to the add item button
+    const addItemBtn = document.getElementById('add-item-btn');
+    
+    // Counter for new items
+    let itemCounter = {{ invoice.items|length }};
+    
+    // Function to add a new item row
+    addItemBtn.addEventListener('click', function() {
+      itemCounter++;
+      
+      // Create a new row
+      const newRow = document.createElement('div');
+      newRow.className = 'row item-row mb-3 border-bottom pb-3';
+      newRow.innerHTML = `
+        <input type="hidden" name="item_id[]" value="">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="item_description_${itemCounter}" class="form-label">Omschrijving</label>
+            <input type="text" name="item_description[]" id="item_description_${itemCounter}" class="form-control" required>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="item_quantity_${itemCounter}" class="form-label">Aantal</label>
+            <input type="number" name="item_quantity[]" id="item_quantity_${itemCounter}" class="form-control" value="1" min="0.01" step="0.01" required>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="item_unit_price_${itemCounter}" class="form-label">Prijs per eenheid</label>
+            <div class="input-group">
+              <span class="input-group-text">€</span>
+              <input type="number" name="item_unit_price[]" id="item_unit_price_${itemCounter}" class="form-control" min="0.01" step="0.01" required>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-1 d-flex align-items-end mb-3">
+          <button type="button" class="btn btn-danger remove-item"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      `;
+      
+      // Add the new row to the container
+      itemContainer.appendChild(newRow);
+      
+      // Update event listeners for remove buttons
+      updateRemoveButtons();
+    });
+    
+    // Function to update remove button event listeners
+    function updateRemoveButtons() {
+      document.querySelectorAll('.remove-item').forEach(button => {
+        button.addEventListener('click', function() {
+          if (confirm('Weet u zeker dat u dit item wilt verwijderen?')) {
+            this.closest('.item-row').remove();
+          }
+        });
+      });
+    }
+    
+    // Initialize remove buttons
+    updateRemoveButtons();
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('invoice_list') }}">Facturen</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}">{{ invoice.invoice_number }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Bewerken</li>
+        </ol>
+    </nav>
+    
+    <div class="d-flex justify-content-between mb-4">
+        <h1>
+            <i class="fa-solid fa-file-invoice-dollar"></i> Factuur bewerken
+        </h1>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('edit_invoice', invoice_id=invoice.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            {{ form.customer_id.label(class="form-label") }}
+                            {{ form.customer_id(class="form-select") }}
+                            {% if form.customer_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.customer_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            {{ form.issue_date.label(class="form-label") }}
+                            {{ form.issue_date(class="form-control", type="date") }}
+                            {% if form.issue_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.issue_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            {{ form.due_date.label(class="form-label") }}
+                            {{ form.due_date(class="form-control", type="date") }}
+                            {% if form.due_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.due_date.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows=7, placeholder="Interne notities over deze factuur...") }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <h4 class="mb-3">Factuuritems</h4>
+                
+                <div id="item-container">
+                    {% for item in invoice.items %}
+                        <div class="row item-row mb-3 border-bottom pb-3">
+                            <input type="hidden" name="item_id[]" value="{{ item.id }}">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="item_description_{{ loop.index }}" class="form-label">Omschrijving</label>
+                                    <input type="text" name="item_description[]" id="item_description_{{ loop.index }}" class="form-control" value="{{ item.description }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="item_quantity_{{ loop.index }}" class="form-label">Aantal</label>
+                                    <input type="number" name="item_quantity[]" id="item_quantity_{{ loop.index }}" class="form-control" value="{{ item.quantity }}" min="0.01" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label for="item_unit_price_{{ loop.index }}" class="form-label">Prijs per eenheid</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">€</span>
+                                        <input type="number" name="item_unit_price[]" id="item_unit_price_{{ loop.index }}" class="form-control" value="{{ item.unit_price }}" min="0.01" step="0.01" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end mb-3">
+                                <button type="button" class="btn btn-danger remove-item"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mb-4">
+                    <button type="button" id="add-item-btn" class="btn btn-outline-primary">
+                        <i class="fa-solid fa-plus"></i> Item toevoegen
+                    </button>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-save"></i> Wijzigingen opslaan
+                    </button>
+                    <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}" class="btn btn-secondary">
+                        Annuleren
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

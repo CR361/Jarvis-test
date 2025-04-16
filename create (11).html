@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}E-mail Opstellen{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-10 offset-lg-1">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fa-solid fa-envelope"></i> E-mail Opstellen
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('send_email') }}">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            <label for="customer_id" class="form-label">{{ form.customer_id.label }} <span class="text-danger">*</span></label>
+                            {{ form.customer_id(class="form-select") }}
+                            {% if form.customer_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.customer_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="template" class="form-label">{{ form.template.label }}</label>
+                            {{ form.template(class="form-select", id="email-template-select") }}
+                            {% if form.template.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.template.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">{{ form.subject.label }} <span class="text-danger">*</span></label>
+                            {{ form.subject(class="form-control") }}
+                            {% if form.subject.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.subject.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="content" class="form-label">{{ form.content.label }} <span class="text-danger">*</span></label>
+                            {{ form.content(class="form-control", rows=10, id="email-content") }}
+                            {% if form.content.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.content.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                U kunt HTML gebruiken voor opmaak. Klantnaam en andere informatie worden automatisch ingevuld op basis van geselecteerde klant.
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-paper-plane"></i> Verzenden
+                            </button>
+                            <a href="{{ url_for('email_list') }}" class="btn btn-secondary">
+                                <i class="fa-solid fa-ban"></i> Annuleren
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Email templates
+    const emailTemplates = {
+        'payment_reminder': `<p>Beste [Klant],</p>
+
+<p>Dit is een herinnering dat factuur [Factuurnummer] nog niet is betaald. De factuur had een vervaldatum van [Vervaldatum].</p>
+
+<p>Het openstaande bedrag is: <strong>€[Bedrag]</strong>.</p>
+
+<p>Graag ontvangen wij uw betaling zo spoedig mogelijk. Indien u reeds heeft betaald, kunt u deze herinnering als niet verzonden beschouwen.</p>
+
+<p>Met vriendelijke groet,<br>
+[Uw Naam]<br>
+[Bedrijfsnaam]</p>`,
+
+        'thank_you': `<p>Beste [Klant],</p>
+
+<p>Hartelijk dank voor uw betaling van factuur [Factuurnummer].</p>
+
+<p>We stellen uw stiptheid op prijs en kijken uit naar onze verdere samenwerking.</p>
+
+<p>Met vriendelijke groet,<br>
+[Uw Naam]<br>
+[Bedrijfsnaam]</p>`,
+
+        'welcome': `<p>Beste [Klant],</p>
+
+<p>Hartelijk welkom als klant bij [Bedrijfsnaam]!</p>
+
+<p>We zijn blij dat u voor onze diensten heeft gekozen en kijken uit naar een prettige samenwerking.</p>
+
+<p>Heeft u vragen of opmerkingen? Neem gerust contact met ons op.</p>
+
+<p>Met vriendelijke groet,<br>
+[Uw Naam]<br>
+[Bedrijfsnaam]</p>`,
+
+        'invoice': `<p>Beste [Klant],</p>
+
+<p>Hierbij ontvangt u factuur [Factuurnummer] voor de geleverde diensten.</p>
+
+<p>Specificaties:</p>
+<ul>
+    <li>Factuurdatum: [Factuurdatum]</li>
+    <li>Vervaldatum: [Vervaldatum]</li>
+    <li>Bedrag: €[Bedrag]</li>
+</ul>
+
+<p>De factuur is bijgevoegd als PDF-bestand. U kunt het bedrag overmaken naar bankrekening [Bankrekeningnummer] onder vermelding van het factuurnummer.</p>
+
+<p>Met vriendelijke groet,<br>
+[Uw Naam]<br>
+[Bedrijfsnaam]</p>`,
+
+        'general': `<p>Beste [Klant],</p>
+
+<p>Bedankt voor uw vertrouwen in onze diensten.</p>
+
+<p>[Voeg hier uw bericht in]</p>
+
+<p>Met vriendelijke groet,<br>
+[Uw Naam]<br>
+[Bedrijfsnaam]</p>`
+    };
+    
+    // Selecteer de template dropdown en content textarea
+    const templateSelect = document.getElementById('email-template-select');
+    const contentTextarea = document.getElementById('email-content');
+    
+    // Voeg event listener toe voor template wijziging
+    if (templateSelect && contentTextarea) {
+        templateSelect.addEventListener('change', function() {
+            const selectedTemplate = this.value;
+            
+            // Als er een template is geselecteerd en die bestaat in onze templates
+            if (selectedTemplate && emailTemplates[selectedTemplate]) {
+                // Alleen invullen als content leeg is of als gebruiker bevestigt dat ze content willen overschrijven
+                if (!contentTextarea.value || confirm('Wilt u de huidige inhoud vervangen door het geselecteerde sjabloon?')) {
+                    contentTextarea.value = emailTemplates[selectedTemplate];
+                }
+            }
+        });
+        
+        // Trigger het change event als er een template is geselecteerd bij het laden van de pagina
+        if (templateSelect.value) {
+            const event = new Event('change');
+            templateSelect.dispatchEvent(event);
+        }
+    }
+});
+</script>
+{% endblock %}

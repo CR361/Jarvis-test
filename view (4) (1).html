@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}Factuur {{ invoice.invoice_number }} - Jarvis CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <h1>
+        <i class="fas fa-file-invoice text-primary me-2"></i>Factuur {{ invoice.invoice_number }}
+    </h1>
+    <div class="btn-group">
+        <a href="{{ url_for('edit_invoice', invoice_id=invoice.id) }}" class="btn btn-outline-primary">
+            <i class="fas fa-edit me-2"></i>Bewerken
+        </a>
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteInvoiceModal">
+            <i class="fas fa-trash-alt me-2"></i>Verwijderen
+        </button>
+    </div>
+</div>
+
+<!-- Invoice status and actions card -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Status: 
+                    {% if invoice.is_paid %}
+                    <span class="badge bg-success">Betaald</span>
+                    {% elif invoice.due_date < current_date %}
+                    <span class="badge bg-danger">Verlopen</span>
+                    {% else %}
+                    <span class="badge bg-warning">Openstaand</span>
+                    {% endif %}
+                </h5>
+                <p class="mb-0">Klant: <a href="{{ url_for('customer_view', customer_id=invoice.customer_id) }}">{{ invoice.customer.name }}</a></p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                {% if not invoice.is_paid %}
+                <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#markPaidModal">
+                    <i class="fas fa-check-circle me-2"></i>Markeren als betaald
+                </button>
+                {% endif %}
+                <form method="POST" action="{{ url_for('send_invoice', invoice_id=invoice.id) }}" class="d-inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-envelope me-2"></i>Versturen naar klant
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invoice details -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Factuurgegevens</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Factuur voor:</p>
+                        <p class="mb-0">{{ invoice.customer.name }}</p>
+                        {% if invoice.customer.company %}
+                        <p class="mb-0">{{ invoice.customer.company }}</p>
+                        {% endif %}
+                        {% if invoice.customer.address %}
+                        <p class="mb-0">{{ invoice.customer.address }}</p>
+                        <p class="mb-0">{{ invoice.customer.postal_code }} {{ invoice.customer.city }}</p>
+                        <p class="mb-0">{{ invoice.customer.country }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1 fw-bold">Factuurgegevens:</p>
+                        <p class="mb-0">Factuurnummer: {{ invoice.invoice_number }}</p>
+                        <p class="mb-0">Factuurdatum: {{ invoice.issue_date.strftime('%d-%m-%Y') }}</p>
+                        <p class="mb-0">Vervaldatum: {{ invoice.due_date.strftime('%d-%m-%Y') }}</p>
+                        {% if invoice.is_paid %}
+                        <p class="mb-0">Betaald op: {{ invoice.payment_date.strftime('%d-%m-%Y') }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <h5 class="card-title mt-4 mb-3">Specificatie</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Omschrijving</th>
+                                <th class="text-center">Aantal</th>
+                                <th class="text-end">Prijs p/st</th>
+                                <th class="text-end">Totaal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in invoice.items %}
+                            <tr>
+                                <td>{{ item.description }}</td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td class="text-end">€ {{ "%.2f"|format(item.unit_price) }}</td>
+                                <td class="text-end">€ {{ "%.2f"|format(item.total()) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="3" class="text-end">Subtotaal:</th>
+                                <th class="text-end">€ {{ "%.2f"|format(invoice.total_amount) }}</th>
+                            </tr>
+                            <tr>
+                                <th colspan="3" class="text-end">BTW (0%):</th>
+                                <th class="text-end">€ 0.00</th>
+                            </tr>
+                            <tr>
+                                <th colspan="3" class="text-end">Totaal:</th>
+                                <th class="text-end">€ {{ "%.2f"|format(invoice.total_amount) }}</th>
+                            </tr>
+                            {% if invoice.amount_paid > 0 %}
+                            <tr>
+                                <th colspan="3" class="text-end">Betaald:</th>
+                                <th class="text-end">€ {{ "%.2f"|format(invoice.amount_paid) }}</th>
+                            </tr>
+                            <tr>
+                                <th colspan="3" class="text-end">Nog te betalen:</th>
+                                <th class="text-end">€ {{ "%.2f"|format(invoice.amount_due()) }}</th>
+                            </tr>
+                            {% endif %}
+                        </tfoot>
+                    </table>
+                </div>
+                
+                {% if invoice.notes %}
+                <div class="mt-4">
+                    <h6 class="mb-2">Notities:</h6>
+                    <p class="mb-0">{{ invoice.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Betalingsgegevens</h5>
+            </div>
+            <div class="card-body">
+                <p>Bankrekening: <strong>NL01ABCD1234567890</strong></p>
+                <p>Tenaamstelling: <strong>Uw Bedrijfsnaam</strong></p>
+                <p>Referentie: <strong>{{ invoice.invoice_number }}</strong></p>
+                
+                <hr>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Terug naar facturen
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Invoice Modal -->
+<div class="modal fade" id="deleteInvoiceModal" tabindex="-1" aria-labelledby="deleteInvoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteInvoiceModalLabel">Factuur verwijderen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Weet je zeker dat je factuur <strong>{{ invoice.invoice_number }}</strong> wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <form method="POST" action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Verwijderen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mark as Paid Modal -->
+<div class="modal fade" id="markPaidModal" tabindex="-1" aria-labelledby="markPaidModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="markPaidModalLabel">Factuur markeren als betaald</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('mark_invoice_paid', invoice_id=invoice.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p>Markeer factuur <strong>{{ invoice.invoice_number }}</strong> als betaald.</p>
+                    <div class="mb-3">
+                        <label for="payment_date" class="form-label">Betaaldatum</label>
+                        <input type="date" class="form-control" id="payment_date" name="payment_date" value="{{ mark_paid_form.payment_date.data.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-success">Markeren als betaald</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

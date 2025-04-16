@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Facturen{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between mb-4">
+        <h1>
+            <i class="fa-solid fa-file-invoice-dollar"></i> Facturen
+        </h1>
+        <div>
+            <a href="{{ url_for('create_invoice') }}" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> Nieuwe Factuur
+            </a>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('invoice_list') }}" class="row g-3">
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">Alle facturen</option>
+                        <option value="open" {% if request.args.get('status') == 'open' %}selected{% endif %}>Openstaand</option>
+                        <option value="paid" {% if request.args.get('status') == 'paid' %}selected{% endif %}>Betaald</option>
+                        <option value="overdue" {% if request.args.get('status') == 'overdue' %}selected{% endif %}>Verlopen</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="search" class="form-control" placeholder="Zoeken op nummer of klant..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fa-solid fa-filter"></i> Filter
+                    </button>
+                </div>
+                {% if request.args.get('search') or request.args.get('status') %}
+                    <div class="col-md-2">
+                        <a href="{{ url_for('invoice_list') }}" class="btn btn-secondary w-100">
+                            <i class="fa-solid fa-times"></i> Wissen
+                        </a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            {% if invoices %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Factuurnummer</th>
+                                <th>Klant</th>
+                                <th>Datum</th>
+                                <th>Vervaldatum</th>
+                                <th>Bedrag</th>
+                                <th>Status</th>
+                                <th>Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in invoices %}
+                                {% set status_class = 'bg-success' if invoice.is_paid else ('bg-danger' if invoice.due_date < today else 'bg-warning') %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}">
+                                            {{ invoice.invoice_number }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('customer_view', customer_id=invoice.customer.id) }}">
+                                            {{ invoice.customer.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ invoice.issue_date.strftime('%d-%m-%Y') }}</td>
+                                    <td>{{ invoice.due_date.strftime('%d-%m-%Y') }}</td>
+                                    <td>€ {{ "%.2f"|format(invoice.total_amount) }}</td>
+                                    <td>
+                                        <span class="badge {{ status_class }}">
+                                            {{ invoice.status() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}" class="btn btn-sm btn-outline-primary" title="Bekijken">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('edit_invoice', invoice_id=invoice.id) }}" class="btn btn-sm btn-outline-secondary" title="Bewerken">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </a>
+                                            {% if not invoice.is_paid %}
+                                                <a href="{{ url_for('mark_invoice_paid', invoice_id=invoice.id) }}" class="btn btn-sm btn-outline-success" title="Markeren als betaald">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </a>
+                                                <a href="{{ url_for('send_invoice', invoice_id=invoice.id) }}" class="btn btn-sm btn-outline-info" title="Verzenden naar klant">
+                                                    <i class="fa-solid fa-paper-plane"></i>
+                                                </a>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Verwijderen" 
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal{{ invoice.id }}">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Delete Modal -->
+                                        <div class="modal fade" id="deleteModal{{ invoice.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ invoice.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteModalLabel{{ invoice.id }}">Factuur verwijderen</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        Weet u zeker dat u factuur <strong>{{ invoice.invoice_number }}</strong> wilt verwijderen?
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                                                        <form action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}" method="POST">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                            <button type="submit" class="btn btn-danger">Verwijderen</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Summary Card -->
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Samenvatting</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h5>Totaal facturen</h5>
+                                        <h2 class="mb-0">€ {{ "%.2f"|format(total_amount) }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h5>Betaald</h5>
+                                        <h2 class="mb-0">€ {{ "%.2f"|format(paid_amount) }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body text-center">
+                                        <h5>Openstaand</h5>
+                                        <h2 class="mb-0">€ {{ "%.2f"|format(unpaid_amount) }}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                {% if request.args.get('search') or request.args.get('status') %}
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-info-circle"></i> Geen facturen gevonden voor uw zoekcriteria.
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="fa-solid fa-info-circle"></i> Er zijn nog geen facturen aangemaakt.
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

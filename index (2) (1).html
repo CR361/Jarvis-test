@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+
+{% block title %}Communicatie - Jarvis CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-comments text-primary me-2"></i>Communicatie
+    </h1>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('communications_list') }}" class="row g-3">
+            <div class="col-md-6">
+                <select name="type" class="form-select">
+                    <option value="">Alle types</option>
+                    <option value="email" {% if request.args.get('type') == 'email' %}selected{% endif %}>E-mail</option>
+                    <option value="telefoon" {% if request.args.get('type') == 'telefoon' %}selected{% endif %}>Telefoongesprek</option>
+                    <option value="vergadering" {% if request.args.get('type') == 'vergadering' %}selected{% endif %}>Vergadering</option>
+                    <option value="notitie" {% if request.args.get('type') == 'notitie' %}selected{% endif %}>Interne notitie</option>
+                    <option value="anders" {% if request.args.get('type') == 'anders' %}selected{% endif %}>Anders</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select name="sort_by" class="form-select">
+                    <option value="date" {% if request.args.get('sort_by') == 'date' %}selected{% endif %}>Sorteren op datum</option>
+                    <option value="customer" {% if request.args.get('sort_by') == 'customer' %}selected{% endif %}>Sorteren op klant</option>
+                    <option value="type" {% if request.args.get('sort_by') == 'type' %}selected{% endif %}>Sorteren op type</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-filter me-2"></i>Filteren
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if communications %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Datum</th>
+                    <th>Klant</th>
+                    <th>Type</th>
+                    <th>Onderwerp</th>
+                    <th>Inhoud</th>
+                    <th>Acties</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comm in communications %}
+                <tr>
+                    <td>{{ comm.date.strftime('%d-%m-%Y') }}</td>
+                    <td>
+                        <a href="{{ url_for('customer_view', customer_id=comm.customer_id) }}">
+                            {{ comm.customer.name }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if comm.type == 'email' %}
+                        <span class="badge bg-primary">E-mail</span>
+                        {% elif comm.type == 'telefoon' %}
+                        <span class="badge bg-success">Telefoongesprek</span>
+                        {% elif comm.type == 'vergadering' %}
+                        <span class="badge bg-warning">Vergadering</span>
+                        {% elif comm.type == 'notitie' %}
+                        <span class="badge bg-info">Interne notitie</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ comm.type }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ comm.subject or 'Geen onderwerp' }}</td>
+                    <td>{{ comm.content|truncate(50) }}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('customer_view', customer_id=comm.customer_id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('delete_communication', communication_id=comm.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Weet je zeker dat je deze communicatie wilt verwijderen?')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle me-2"></i>Geen communicaties gevonden. Voeg communicatie toe via een klantpagina.
+</div>
+{% endif %}
+
+<div class="mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">Communicatie statistieken</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">Totaal aantal communicaties</h6>
+                            <h3 class="card-text text-primary">{{ communications|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">Communicaties deze maand</h6>
+                            <h3 class="card-text text-success">
+                                {% set current_month = now().month %}
+                                {% set this_month = 0 %}
+                                {% for comm in communications %}
+                                    {% if comm.date.month == current_month %}
+                                        {% set this_month = this_month + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ this_month }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h6 class="card-title">Meest voorkomende type</h6>
+                            <h3 class="card-text text-info">
+                                {% set type_count = {} %}
+                                {% for comm in communications %}
+                                    {% if comm.type in type_count %}
+                                        {% set _ = type_count.update({comm.type: type_count[comm.type] + 1}) %}
+                                    {% else %}
+                                        {% set _ = type_count.update({comm.type: 1}) %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% set max_type = "Geen" %}
+                                {% set max_count = 0 %}
+                                {% for type, count in type_count.items() %}
+                                    {% if count > max_count %}
+                                        {% set max_type = type %}
+                                        {% set max_count = count %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {{ max_type|title }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

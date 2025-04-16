@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Nieuw contract - Jarvis CRM{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-file-signature text-primary me-2"></i>Nieuw contract
+    </h1>
+    <a href="{{ url_for('customer_view', customer_id=customer.id) }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Terug naar klant
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Contract voor {{ customer.name }}</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('create_contract', customer_id=customer.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Templates -->
+            <div class="mb-4">
+                <h6 class="mb-3">Sjablonen</h6>
+                <div class="row">
+                    {% for template in templates %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 border-primary template-card" data-content="{{ template.content }}" style="cursor: pointer;">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ template.name }}</h6>
+                                <p class="card-text small text-muted">{{ template.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="text-muted small fst-italic">Klik op een sjabloon om de inhoud te laden</p>
+            </div>
+            
+            <div class="mb-3">
+                <label for="title" class="form-label">Titel *</label>
+                <input type="text" class="form-control {% if form.title.errors %}is-invalid{% endif %}" id="title" name="title" value="{{ form.title.data or '' }}" required>
+                {% if form.title.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.title.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="content" class="form-label">Inhoud *</label>
+                <textarea class="form-control {% if form.content.errors %}is-invalid{% endif %}" id="content" name="content" rows="10" required>{{ form.content.data or '' }}</textarea>
+                {% if form.content.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.content.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('customer_view', customer_id=customer.id) }}" class="btn btn-outline-secondary me-md-2">Annuleren</a>
+                <button type="submit" class="btn btn-primary">Contract aanmaken</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Template selectie
+    const templateCards = document.querySelectorAll('.template-card');
+    const contentField = document.getElementById('content');
+    
+    templateCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const content = this.dataset.content;
+            contentField.value = content;
+            
+            // Markeer geselecteerde template
+            templateCards.forEach(c => c.classList.remove('border-success', 'bg-light'));
+            this.classList.add('border-success', 'bg-light');
+        });
+    });
+});
+</script>
+{% endblock %}

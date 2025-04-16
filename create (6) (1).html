@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}Nieuwe factuur - Jarvis CRM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .item-row {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+    .remove-item-btn {
+        margin-top: 32px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="fas fa-file-invoice-dollar text-primary me-2"></i>Nieuwe factuur
+    </h1>
+    <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Terug naar facturen
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('create_invoice') }}" id="invoice-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label for="customer_id" class="form-label">Klant *</label>
+                    <select class="form-select {% if form.customer_id.errors %}is-invalid{% endif %}" id="customer_id" name="customer_id" required>
+                        <option value="">Selecteer een klant</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if form.customer_id.data == customer.id %}selected{% endif %}>
+                            {{ customer.name }} {% if customer.company %}({{ customer.company }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.customer_id.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.customer_id.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label for="issue_date" class="form-label">Factuurdatum *</label>
+                    <input type="date" class="form-control {% if form.issue_date.errors %}is-invalid{% endif %}" id="issue_date" name="issue_date" value="{{ form.issue_date.data.strftime('%Y-%m-%d') }}" required>
+                    {% if form.issue_date.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.issue_date.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="due_date" class="form-label">Vervaldatum *</label>
+                    <input type="date" class="form-control {% if form.due_date.errors %}is-invalid{% endif %}" id="due_date" name="due_date" value="{{ form.due_date.data.strftime('%Y-%m-%d') }}" required>
+                    {% if form.due_date.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.due_date.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <h5 class="mb-3">Factuuritems</h5>
+            
+            <div id="invoice-items">
+                <!-- Initial item row -->
+                <div class="item-row">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <label for="item_description_0" class="form-label">Omschrijving *</label>
+                            <input type="text" class="form-control" id="item_description_0" name="item_description[]" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="item_quantity_0" class="form-label">Aantal *</label>
+                            <input type="number" class="form-control item-quantity" id="item_quantity_0" name="item_quantity[]" value="1" min="0.01" step="0.01" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="item_unit_price_0" class="form-label">Prijs per eenheid *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">€</span>
+                                <input type="number" class="form-control item-price" id="item_unit_price_0" name="item_unit_price[]" min="0.01" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-danger remove-item-btn" disabled>
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <button type="button" class="btn btn-outline-primary" id="add-item-btn">
+                    <i class="fas fa-plus-circle me-2"></i>Voeg item toe
+                </button>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-8 offset-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotaal:</span>
+                                <span id="subtotal">€ 0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>BTW (0%):</span>
+                                <span>€ 0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between fw-bold">
+                                <span>Totaal:</span>
+                                <span id="total">€ 0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="notes" class="form-label">Notities</label>
+                <textarea class="form-control {% if form.notes.errors %}is-invalid{% endif %}" id="notes" name="notes" rows="3">{{ form.notes.data or '' }}</textarea>
+                {% if form.notes.errors %}
+                <div class="invalid-feedback">
+                    {% for error in form.notes.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-secondary me-md-2">Annuleren</a>
+                <button type="submit" class="btn btn-primary">Factuur opslaan</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let itemIndex = 0;
+        
+        // Add new item button functionality
+        document.getElementById('add-item-btn').addEventListener('click', function() {
+            itemIndex++;
+            
+            const newItem = document.createElement('div');
+            newItem.className = 'item-row';
+            newItem.innerHTML = `
+                <div class="row">
+                    <div class="col-md-5">
+                        <label for="item_description_${itemIndex}" class="form-label">Omschrijving *</label>
+                        <input type="text" class="form-control" id="item_description_${itemIndex}" name="item_description[]" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="item_quantity_${itemIndex}" class="form-label">Aantal *</label>
+                        <input type="number" class="form-control item-quantity" id="item_quantity_${itemIndex}" name="item_quantity[]" value="1" min="0.01" step="0.01" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="item_unit_price_${itemIndex}" class="form-label">Prijs per eenheid *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">€</span>
+                            <input type="number" class="form-control item-price" id="item_unit_price_${itemIndex}" name="item_unit_price[]" min="0.01" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger remove-item-btn">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('invoice-items').appendChild(newItem);
+            
+            // Enable all remove buttons if we have more than one item
+            if (document.querySelectorAll('.item-row').length > 1) {
+                document.querySelectorAll('.remove-item-btn').forEach(btn => {
+                    btn.disabled = false;
+                });
+            }
+            
+            // Add event listeners to new inputs
+            attachEventListeners();
+        });
+        
+        // Remove item functionality (delegated event)
+        document.getElementById('invoice-items').addEventListener('click', function(e) {
+            if (e.target.closest('.remove-item-btn')) {
+                e.target.closest('.item-row').remove();
+                calculateTotal();
+                
+                // If only one item remains, disable its remove button
+                if (document.querySelectorAll('.item-row').length === 1) {
+                    document.querySelector('.remove-item-btn').disabled = true;
+                }
+            }
+        });
+        
+        // Calculate totals when inputs change
+        function attachEventListeners() {
+            document.querySelectorAll('.item-quantity, .item-price').forEach(input => {
+                input.addEventListener('input', calculateTotal);
+            });
+        }
+        
+        function calculateTotal() {
+            let subtotal = 0;
+            
+            document.querySelectorAll('.item-row').forEach(row => {
+                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                
+                subtotal += quantity * price;
+            });
+            
+            document.getElementById('subtotal').textContent = `€ ${subtotal.toFixed(2)}`;
+            document.getElementById('total').textContent = `€ ${subtotal.toFixed(2)}`;
+        }
+        
+        // Initial setup
+        attachEventListeners();
+    });
+</script>
+{% endblock %}
